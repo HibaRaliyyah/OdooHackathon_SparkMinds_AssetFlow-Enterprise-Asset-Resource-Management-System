@@ -41,8 +41,8 @@ const Login: React.FC = () => {
         <div className={`absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23ffffff" fill-opacity="0.05"%3E%3Cpath d="M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')]`} />
         <div className="relative">
           <div className="flex items-center gap-3 mb-12">
-            <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center backdrop-blur-sm">
-              <Zap size={24} className="text-white" />
+            <div className="w-16 h-16 rounded-2xl bg-white flex items-center justify-center shadow-lg overflow-hidden p-1">
+              <img src="/logo.png" alt="Logo" className="w-full h-full object-contain" />
             </div>
             <div>
               <h1 className="text-2xl font-bold text-white">AssetFlow</h1>
@@ -79,8 +79,8 @@ const Login: React.FC = () => {
           className="w-full max-w-md"
         >
           <div className="lg:hidden flex items-center gap-2 mb-8">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary-500 to-secondary-500 flex items-center justify-center">
-              <Zap size={18} className="text-white" />
+            <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center shadow-md overflow-hidden p-1">
+              <img src="/logo.png" alt="Logo" className="w-full h-full object-contain" />
             </div>
             <span className="text-xl font-bold gradient-text">AssetFlow</span>
           </div>

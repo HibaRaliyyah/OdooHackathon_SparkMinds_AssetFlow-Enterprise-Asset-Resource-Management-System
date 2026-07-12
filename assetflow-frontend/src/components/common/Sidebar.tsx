@@ -53,8 +53,8 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
     >
       {/* Logo */}
       <div className="flex items-center gap-3 px-4 py-4 border-b border-slate-200 dark:border-slate-700/50 min-h-[65px]">
-        <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-gradient-to-br from-primary-500 to-secondary-500 flex items-center justify-center shadow-lg">
-          <Zap size={18} className="text-white" />
+        <div className="flex-shrink-0 w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center shadow-md bg-white">
+          <img src="/logo.png" alt="Logo" className="w-full h-full object-contain" />
         </div>
         <AnimatePresence>
           {!collapsed && (
