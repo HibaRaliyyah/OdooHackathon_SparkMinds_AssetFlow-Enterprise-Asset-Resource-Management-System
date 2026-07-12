@@ -1,0 +1,18 @@
+/* Theme variables for light and dark mode */
+:root {
+  --color-primary-500:  #0066ff;
+  --color-primary-600:  #0052cc;
+  --color-background:   #F5F7FA;
+  --color-surface:      #FFFFFF;
+  --color-border:       #E2E8F0;
+  --color-muted:        #F0F4F8;
+  --color-accent:       #FF5A5F;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-background: #1A1A1A;
+    --color-surface:    #2A2A2A;
+    --color-border:     #3F3F3F;
+    --color-muted:      #2F2F2F;
+  }
+}
