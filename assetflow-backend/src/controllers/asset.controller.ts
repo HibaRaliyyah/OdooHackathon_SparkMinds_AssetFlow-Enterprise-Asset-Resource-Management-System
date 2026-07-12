@@ -11,7 +11,7 @@ import { AuthRequest } from '../middlewares/auth.middleware';
 export const createAsset = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const files = req.files as Express.Multer.File[];
-    const images = files ? files.map(f => `/uploads/${f.filename}`) : [];
+    const images = files ? files.map(f => f.path) : [];
 
     const asset = await Asset.create({
       ...req.body,
@@ -97,7 +97,7 @@ export const updateAsset = async (req: AuthRequest, res: Response): Promise<void
     if (!old) { sendError(res, 'Asset not found', 404); return; }
 
     const files = req.files as Express.Multer.File[];
-    const newImages = files ? files.map(f => `/uploads/${f.filename}`) : [];
+    const newImages = files ? files.map(f => f.path) : [];
     if (newImages.length > 0) req.body.images = [...(old.images || []), ...newImages];
 
     const asset = await Asset.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
@@ -180,13 +180,11 @@ export const getDashboardStats = async (req: AuthRequest, res: Response): Promis
       Maintenance.countDocuments({ status: 'pending' }),
     ]);
 
-    // Category distribution
-    const categoryDist = await Asset.aggregate([
-      { $match: filter },
-      { $group: { _id: '$category', count: { $sum: 1 } } },
-      { $lookup: { from: 'assetcategories', localField: '_id', foreignField: '_id', as: 'cat' } },
-      { $unwind: { path: '$cat', preserveNullAndEmptyArrays: true } },
-      { $project: { name: { $ifNull: ['$cat.name', 'Unknown'] }, count: 1, color: '$cat.color' } },
+    // Activity distribution
+    const activityDist = await ActivityLog.aggregate([
+      { $group: { _id: '$action', count: { $sum: 1 } } },
+      { $project: { name: '$_id', count: 1, _id: 0 } },
+      { $sort: { count: -1 } }
     ]);
 
     // Department usage
@@ -246,7 +244,7 @@ export const getDashboardStats = async (req: AuthRequest, res: Response): Promis
 
     sendSuccess(res, {
       stats: { total, available, allocated, underMaintenance, disposed, pendingRequests: pending },
-      categoryDistribution: categoryDist,
+      activityDistribution: activityDist,
       departmentUsage: deptUsage,
       assetGrowth,
       recentActivity,

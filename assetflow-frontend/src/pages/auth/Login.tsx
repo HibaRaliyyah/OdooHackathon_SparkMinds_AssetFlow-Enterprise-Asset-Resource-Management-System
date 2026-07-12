@@ -120,7 +120,7 @@ const Login: React.FC = () => {
                 </button>
               </div>
               <div className="text-right mt-1">
-                <Link to="/forgot-password" className="text-xs text-primary-600 hover:text-primary-700">Forgot password?</Link>
+                {/* <Link to="/forgot-password" className="text-xs text-primary-600 hover:text-primary-700">Forgot password?</Link> */}
               </div>
             </div>
 
@@ -150,10 +150,10 @@ const Login: React.FC = () => {
             </div>
           </div>
 
-          <p className="text-center text-sm text-slate-500 mt-6">
+          {/* <p className="text-center text-sm text-slate-500 mt-6">
             Don't have an account?{' '}
             <Link to="/signup" className="text-primary-600 font-semibold hover:text-primary-700">Create one</Link>
-          </p>
+          </p> */}
         </motion.div>
       </div>
     </div>

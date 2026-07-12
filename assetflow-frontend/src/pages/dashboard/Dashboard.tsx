@@ -26,12 +26,29 @@ const Dashboard: React.FC = () => {
 
   const dashboardPayload = (dashData as any)?.data?.data;
   const stats = dashboardPayload?.stats;
-  const categoryDist = dashboardPayload?.categoryDistribution || [];
+  const activityDist = dashboardPayload?.activityDistribution || [];
   const deptUsage = dashboardPayload?.departmentUsage || [];
   const recentActivity = dashboardPayload?.recentActivity || [];
   const insights: AIInsight[] = (insightsData as unknown as { data: { data: AIInsight[] } })?.data?.data || [];
 
-  const CHART_COLORS = ['#4F46E5', '#7C3AED', '#10B981', '#F59E0B', '#EF4444', '#06B6D4'];
+  const CHART_COLORS = ['#4F46E5', '#7C3AED', '#10B981', '#F59E0B', '#EF4444', '#06B6D4', '#ec4899', '#8b5cf6', '#14b8a6'];
+
+  const renderCustomizedLabel = ({ cx, cy, midAngle, outerRadius, percent, index, name }: any) => {
+    const radius = outerRadius + 15;
+    const x = cx + radius * Math.cos(-midAngle * Math.PI / 180);
+    const y = cy + radius * Math.sin(-midAngle * Math.PI / 180);
+
+    const formatName = (str: string) => {
+      if (!str) return 'Unknown';
+      return str.split('_').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+    };
+
+    return (
+      <text x={x} y={y} fill={CHART_COLORS[index % CHART_COLORS.length]} textAnchor={x > cx ? 'start' : 'end'} dominantBaseline="central" fontSize={10} fontWeight={500}>
+        {`${formatName(name)} ${(percent * 100).toFixed(0)}%`}
+      </text>
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -61,20 +78,20 @@ const Dashboard: React.FC = () => {
 
       {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        {/* Asset Distribution Pie */}
+        {/* Activity Distribution Pie */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
           className="glass-card p-5 col-span-2">
           <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-4 flex items-center gap-2">
-            <Package size={16} className="text-primary-500" /> Asset by Category
+            <Package size={16} className="text-primary-500" /> Activities Performed
           </h3>
           <ResponsiveContainer width="100%" height={220}>
             <PieChart>
-              <Pie data={categoryDist} dataKey="count" nameKey="name" cx="50%" cy="50%" outerRadius={80} label={({ name, percent }: any) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false}>
-                {categoryDist.map((_: any, index: number) => (
+              <Pie data={activityDist} dataKey="count" nameKey="name" cx="50%" cy="50%" outerRadius={70} label={renderCustomizedLabel} labelLine={false}>
+                {activityDist.map((_: any, index: number) => (
                   <Cell key={index} fill={CHART_COLORS[index % CHART_COLORS.length]} />
                 ))}
               </Pie>
-              <Tooltip formatter={(val: any) => [val, 'Assets']} />
+              <Tooltip formatter={(val: any) => [val, 'Activities']} />
             </PieChart>
           </ResponsiveContainer>
         </motion.div>

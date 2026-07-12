@@ -14,6 +14,12 @@ export interface User {
   isEmailVerified: boolean;
   lastLogin?: string;
   createdAt: string;
+  preferences?: {
+    email: boolean;
+    maintenance: boolean;
+    booking: boolean;
+    transfer: boolean;
+  };
 }
 
 export interface Department {

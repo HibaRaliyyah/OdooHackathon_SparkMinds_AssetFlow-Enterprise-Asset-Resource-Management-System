@@ -49,7 +49,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
     <motion.aside
       animate={{ width: collapsed ? 64 : 240 }}
       transition={{ duration: 0.25, ease: 'easeInOut' }}
-      className="fixed left-0 top-0 h-screen bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700/50 z-40 flex flex-col overflow-hidden"
+      className="fixed left-0 top-0 h-screen bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700/50 z-40 flex flex-col overflow-hidden print:hidden"
     >
       {/* Logo */}
       <div className="flex items-center gap-3 px-4 py-4 border-b border-slate-200 dark:border-slate-700/50 min-h-[65px]">

@@ -47,16 +47,56 @@ export const getHealthScores = async (req: AuthRequest, res: Response): Promise<
       .populate('category', 'name')
       .populate('department', 'name')
       .select('name assetId condition purchaseDate warrantyExpiry lastAuditDate status')
-      .limit(50);
+      .limit(10); // Limit to 10 for AI processing speed
 
-    const scored = assets.map((a) => ({
-      id: a._id,
-      assetId: a.assetId,
-      name: a.name,
-      condition: a.condition,
-      healthScore: computeHealthScore(a),
-      status: a.status,
-    }));
+    const prompt = `You are an AI assistant. I will provide a list of assets. For each asset, compute a health score from 0 to 100 based on its condition (excellent=90-100, good=70-89, fair=50-69, poor=30-49, damaged=0-29), age, and warranty status.
+    
+Assets:
+${assets.map(a => `- ID: ${a._id}, Name: ${a.name}, Condition: ${a.condition}, Age: ${a.purchaseDate ? Math.round((Date.now() - new Date(a.purchaseDate).getTime())/(1000*3600*24*365)) : 0} years, Warranty Expired: ${a.warrantyExpiry && new Date(a.warrantyExpiry) < new Date() ? 'Yes' : 'No'}`).join('\n')}
+
+Return STRICTLY a JSON array of objects, where each object has:
+- id: the exact ID string provided
+- healthScore: an integer from 0 to 100
+No markdown, no explanation, only the JSON array.`;
+
+    let scoredMap: Record<string, number> = {};
+    if (process.env.OPENROUTER_API_KEY) {
+      try {
+        const completion = await client.chat.completions.create({
+          model: process.env.AI_MODEL || 'mistralai/mistral-7b-instruct:free',
+          messages: [{ role: 'user', content: prompt }],
+        });
+        const content = completion.choices[0]?.message?.content || '';
+        const match = content.match(/\[.*\]/s);
+        if (match) {
+          const parsed = JSON.parse(match[0]);
+          if (Array.isArray(parsed)) {
+            parsed.forEach((p: any) => {
+              if (p.id && typeof p.healthScore === 'number') {
+                scoredMap[p.id] = p.healthScore;
+              }
+            });
+          }
+        }
+      } catch (e) {
+        console.error('AI HealthScore Error:', e);
+      }
+    }
+
+    const scored = assets.map((a) => {
+      let score = scoredMap[a._id.toString()];
+      if (typeof score !== 'number') {
+        score = computeHealthScore(a as any); // Fallback to rule-based
+      }
+      return {
+        id: a._id,
+        assetId: a.assetId,
+        name: a.name,
+        condition: a.condition,
+        healthScore: score,
+        status: a.status,
+      };
+    });
 
     // Update health scores in DB
     await Promise.all(scored.map(s => Asset.findByIdAndUpdate(s.id, { healthScore: s.healthScore })));
@@ -143,25 +183,45 @@ export const naturalLanguageSearch = async (req: AuthRequest, res: Response): Pr
 
 export const getDashboardInsights = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const [totalAssets, poorCondition, expiredWarranty, pendingMaintenance] = await Promise.all([
-      Asset.countDocuments({ status: { $ne: 'disposed' } }),
-      Asset.countDocuments({ condition: { $in: ['poor', 'damaged'] } }),
-      Asset.countDocuments({ warrantyExpiry: { $lt: new Date() } }),
-      Maintenance.countDocuments({ status: 'pending' }),
-    ]);
+    const assets = await Asset.find({ status: { $ne: 'disposed' } }).select('condition purchaseDate warrantyExpiry');
+    const maintenance = await Maintenance.find({ status: 'pending' });
 
-    const insights = [];
+    const prompt = `You are an AI assistant for an enterprise asset management system. 
+Analyze the following system summary:
+- Total Assets: ${assets.length}
+- Assets in poor/damaged condition: ${assets.filter(a => ['poor', 'damaged'].includes(a.condition)).length}
+- Assets with expired warranty: ${assets.filter(a => a.warrantyExpiry && new Date(a.warrantyExpiry) < new Date()).length}
+- Pending maintenance requests: ${maintenance.length}
 
-    if (poorCondition > 0) {
-      insights.push({ type: 'warning', icon: 'AlertTriangle', message: `${poorCondition} asset(s) in poor/damaged condition need immediate attention.`, action: 'Review Assets' });
+Generate exactly 3 proactive insights or recommendations based on this data.
+Return STRICTLY a JSON array of objects. Each object must have:
+- type: "warning", "error", "success", or "info"
+- message: a concise professional recommendation (max 1 sentence)
+No extra text, no markdown format.`;
+
+    let insights: any[] = [];
+    if (process.env.OPENROUTER_API_KEY) {
+      try {
+        const completion = await client.chat.completions.create({
+          model: process.env.AI_MODEL || 'mistralai/mistral-7b-instruct:free',
+          messages: [{ role: 'user', content: prompt }],
+        });
+        const content = completion.choices[0]?.message?.content || '';
+        const match = content.match(/\[.*\]/s);
+        if (match) {
+          insights = JSON.parse(match[0]);
+        }
+      } catch (e) {
+        console.error('AI Insight Error:', e);
+      }
     }
-    if (expiredWarranty > 0) {
-      insights.push({ type: 'error', icon: 'Shield', message: `${expiredWarranty} asset(s) have expired warranties. Consider renewal or replacement.`, action: 'View Assets' });
+
+    if (!insights || insights.length === 0) {
+      // Fallback
+      insights = [
+        { type: 'info', message: `Total portfolio: ${assets.length} active assets tracked in the system.` }
+      ];
     }
-    if (pendingMaintenance > 5) {
-      insights.push({ type: 'warning', icon: 'Wrench', message: `${pendingMaintenance} maintenance requests are pending approval.`, action: 'Review Requests' });
-    }
-    insights.push({ type: 'info', icon: 'TrendingUp', message: `Total portfolio: ${totalAssets} active assets tracked in the system.` });
 
     sendSuccess(res, insights);
   } catch (err: unknown) { sendError(res, (err as Error).message, 500); }

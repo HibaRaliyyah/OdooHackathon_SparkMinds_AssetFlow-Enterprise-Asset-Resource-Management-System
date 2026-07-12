@@ -1,7 +1,8 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { QRCodeSVG } from 'qrcode.react';
+import toast from 'react-hot-toast';
 import { ArrowLeft, Edit, Trash2, Printer, MapPin, Tag, Box, Info } from 'lucide-react';
 import { assetService } from '../../services';
 import { Asset } from '../../types';
@@ -11,7 +12,9 @@ import { CardSkeleton } from '../../components/common/Skeleton';
 const AssetDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const printRef = useRef<HTMLDivElement>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const { data: res, isLoading } = useQuery({
     queryKey: ['asset', id],
@@ -23,6 +26,27 @@ const AssetDetails: React.FC = () => {
 
   const handlePrint = () => {
     window.print();
+  };
+
+  const deleteMutation = useMutation({
+    mutationFn: () => assetService.delete(id as string),
+    onSuccess: () => {
+      toast.success('Asset deleted successfully');
+      queryClient.invalidateQueries({ queryKey: ['assets'] });
+      navigate('/assets');
+    },
+    onError: (error: any) => {
+      toast.error(error?.response?.data?.message || 'Failed to delete asset');
+    }
+  });
+
+  const handleDelete = () => {
+    setShowDeleteConfirm(true);
+  };
+  
+  const confirmDelete = () => {
+    deleteMutation.mutate();
+    setShowDeleteConfirm(false);
   };
 
   if (isLoading) {
@@ -37,20 +61,24 @@ const AssetDetails: React.FC = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <button onClick={() => navigate(-1)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
+          <button onClick={() => navigate(-1)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors print:hidden">
             <ArrowLeft size={20} className="text-slate-600 dark:text-slate-300" />
           </button>
           <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Asset Details</h1>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 print:hidden">
           <button onClick={handlePrint} className="btn-secondary">
             <Printer size={16} /> Print QR
           </button>
           <button onClick={() => navigate(`/assets/${id}/edit`)} className="btn-primary">
             <Edit size={16} /> Edit Asset
           </button>
-          <button className="btn-danger">
-            <Trash2 size={16} /> Delete
+          <button 
+            onClick={handleDelete}
+            disabled={deleteMutation.isPending}
+            className="btn-danger"
+          >
+            <Trash2 size={16} /> {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
           </button>
         </div>
       </div>
@@ -156,6 +184,34 @@ const AssetDetails: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl max-w-md w-full p-6 animate-scale-in">
+            <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-2">Delete Asset</h3>
+            <p className="text-slate-600 dark:text-slate-300 mb-6">
+              Are you sure you want to delete this asset? This action cannot be undone and will remove all associated data.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button 
+                onClick={() => setShowDeleteConfirm(false)}
+                className="btn-secondary"
+                disabled={deleteMutation.isPending}
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={confirmDelete}
+                className="btn-danger"
+                disabled={deleteMutation.isPending}
+              >
+                {deleteMutation.isPending ? 'Deleting...' : 'Delete Asset'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

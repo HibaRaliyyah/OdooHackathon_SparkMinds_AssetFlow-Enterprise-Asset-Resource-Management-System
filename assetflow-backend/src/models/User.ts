@@ -19,6 +19,12 @@ export interface IUser extends Document {
   lastLogin?: Date;
   comparePassword(candidate: string): Promise<boolean>;
   fullName: string;
+  preferences: {
+    email: boolean;
+    maintenance: boolean;
+    booking: boolean;
+    transfer: boolean;
+  };
 }
 
 const UserSchema = new Schema<IUser>(
@@ -42,6 +48,12 @@ const UserSchema = new Schema<IUser>(
     passwordResetToken: { type: String },
     passwordResetExpires: { type: Date },
     lastLogin: { type: Date },
+    preferences: {
+      email: { type: Boolean, default: true },
+      maintenance: { type: Boolean, default: true },
+      booking: { type: Boolean, default: true },
+      transfer: { type: Boolean, default: true },
+    },
   },
   { timestamps: true }
 );

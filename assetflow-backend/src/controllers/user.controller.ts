@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import User from '../models/User';
 import { sendSuccess, sendError, getPaginationParams } from '../utils/response.util';
+import bcrypt from 'bcryptjs';
 import { AuthRequest } from '../middlewares/auth.middleware';
 
 export const getUsers = async (req: AuthRequest, res: Response): Promise<void> => {
@@ -54,7 +55,7 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
 export const updateUser = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { password, ...updateData } = req.body;
-    if (req.file) updateData.avatar = `/uploads/${req.file.filename}`;
+    if (req.file) updateData.avatar = req.file.path;
     const user = await User.findByIdAndUpdate(req.params.id, updateData, { new: true });
     if (!user) { sendError(res, 'User not found', 404); return; }
     sendSuccess(res, user, 'User updated');
@@ -73,8 +74,38 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
   try {
     const { firstName, lastName, phone } = req.body;
     const update: Record<string, unknown> = { firstName, lastName, phone };
-    if (req.file) update.avatar = `/uploads/${req.file.filename}`;
+    if (req.file) update.avatar = req.file.path;
     const user = await User.findByIdAndUpdate(req.user?.id, update, { new: true }).populate('department');
     sendSuccess(res, user, 'Profile updated');
+  } catch (err: unknown) { sendError(res, (err as Error).message, 500); }
+};
+
+export const changePassword = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const user = await User.findById(req.user?.id);
+    if (!user) { sendError(res, 'User not found', 404); return; }
+
+    const isMatch = await user.comparePassword(currentPassword);
+    if (!isMatch) { sendError(res, 'Incorrect current password', 400); return; }
+
+    user.password = newPassword;
+    await user.save();
+    
+    sendSuccess(res, null, 'Password updated successfully');
+  } catch (err: unknown) { sendError(res, (err as Error).message, 500); }
+};
+
+export const updatePreferences = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { preferences } = req.body;
+    const user = await User.findByIdAndUpdate(
+      req.user?.id, 
+      { $set: { preferences } }, 
+      { new: true }
+    ).populate('department');
+    if (!user) { sendError(res, 'User not found', 404); return; }
+    
+    sendSuccess(res, user, 'Preferences updated successfully');
   } catch (err: unknown) { sendError(res, (err as Error).message, 500); }
 };

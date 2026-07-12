@@ -10,6 +10,8 @@ router.get('/', authorize('admin', 'asset_manager', 'department_head'), user.get
 router.get('/:id', user.getUser);
 router.post('/', authorize('admin'), user.createUser);
 router.put('/profile', upload.single('avatar'), user.updateProfile);
+router.put('/password', user.changePassword);
+router.put('/preferences', user.updatePreferences);
 router.put('/:id', authorize('admin'), upload.single('avatar'), user.updateUser);
 router.delete('/:id', authorize('admin'), user.deleteUser);
 

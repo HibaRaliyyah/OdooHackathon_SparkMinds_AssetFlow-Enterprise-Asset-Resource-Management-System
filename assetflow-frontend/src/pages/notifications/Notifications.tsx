@@ -12,24 +12,24 @@ const Notifications: React.FC = () => {
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
-    queryKey: ['notifications-all'],
+    queryKey: ['notifications', 'all'],
     queryFn: () => notificationService.getAll({ limit: 50 }),
     refetchInterval: 30000,
   });
 
   const markRead = useMutation({
     mutationFn: (id: string) => notificationService.markAsRead(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['notifications-all'] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['notifications'] }),
   });
 
   const markAll = useMutation({
     mutationFn: () => notificationService.markAllAsRead(),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['notifications-all'] }); toast.success('All marked as read'); },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['notifications'] }); toast.success('All marked as read'); },
   });
 
   const responseData = (data as any)?.data?.data;
   const notifications: Notification[] = responseData?.notifications || [];
-  const unread = notifications.filter(n => !n.isRead).length;
+  const unread = responseData?.unreadCount || 0;
 
   const typeColor: Record<string, string> = {
     info: 'bg-blue-500', success: 'bg-green-500', warning: 'bg-amber-500', error: 'bg-red-500',

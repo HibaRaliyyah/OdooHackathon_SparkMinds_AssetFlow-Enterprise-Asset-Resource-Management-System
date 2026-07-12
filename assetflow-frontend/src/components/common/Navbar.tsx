@@ -27,22 +27,12 @@ const Navbar: React.FC<NavbarProps> = ({ sidebarCollapsed }) => {
 
   return (
     <header
-      className="fixed top-0 right-0 h-16 bg-white/80 dark:bg-slate-900/80 backdrop-blur-glass border-b border-slate-200 dark:border-slate-700/50 z-30 flex items-center px-6 gap-4 transition-all duration-250"
+      className="fixed top-0 right-0 h-16 bg-white/80 dark:bg-slate-900/80 backdrop-blur-glass border-b border-slate-200 dark:border-slate-700/50 z-30 flex items-center px-6 gap-4 transition-all duration-250 print:hidden"
       style={{ left: sidebarCollapsed ? 64 : 240 }}
     >
       {/* Search */}
-      <div className="flex-1 max-w-md">
-        <div className="relative">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Search assets, employees..."
-            className="w-full pl-9 pr-4 py-2 text-sm bg-slate-100 dark:bg-slate-800 border border-transparent focus:border-primary-300 dark:focus:border-primary-600 rounded-lg outline-none transition-colors dark:text-slate-200 placeholder:text-slate-400"
-            onFocus={() => navigate('/ai?search=true')}
-            readOnly
-          />
-        </div>
-      </div>
+      {/* Spacer to push items to the right */}
+      <div className="flex-1"></div>
 
       <div className="flex items-center gap-2 ml-auto">
         {/* Theme toggle */}
