@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, Package, Users, Building2, Tag, Calendar,
@@ -52,7 +52,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
       className="fixed left-0 top-0 h-screen bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-700/50 z-40 flex flex-col overflow-hidden print:hidden"
     >
       {/* Logo */}
-      <div className="flex items-center gap-3 px-4 py-4 border-b border-slate-200 dark:border-slate-700/50 min-h-[65px]">
+      <Link to="/dashboard" className="flex items-center gap-3 px-4 py-4 border-b border-slate-200 dark:border-slate-700/50 min-h-[65px] hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
         <div className="flex-shrink-0 w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center shadow-md bg-white">
           <img src="/logo.png" alt="Logo" className="w-full h-full object-contain" />
         </div>
@@ -64,7 +64,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, onToggle }) => {
             </motion.div>
           )}
         </AnimatePresence>
-      </div>
+      </Link>
 
       {/* Nav Items */}
       <nav className="flex-1 overflow-y-auto py-3 px-2 custom-scrollbar space-y-0.5">
