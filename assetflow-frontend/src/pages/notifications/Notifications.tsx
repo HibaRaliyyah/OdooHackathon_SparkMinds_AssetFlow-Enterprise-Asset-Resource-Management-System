@@ -27,7 +27,8 @@ const Notifications: React.FC = () => {
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['notifications-all'] }); toast.success('All marked as read'); },
   });
 
-  const notifications: Notification[] = (data as { data: { data: Notification[] } })?.data?.data || [];
+  const responseData = (data as any)?.data?.data;
+  const notifications: Notification[] = responseData?.notifications || [];
   const unread = notifications.filter(n => !n.isRead).length;
 
   const typeColor: Record<string, string> = {

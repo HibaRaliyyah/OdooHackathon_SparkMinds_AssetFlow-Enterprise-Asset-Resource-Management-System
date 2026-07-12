@@ -7,9 +7,12 @@ import { Department } from '../../types';
 import { TableSkeleton } from '../../components/common/Skeleton';
 import EmptyState from '../../components/common/EmptyState';
 import toast from 'react-hot-toast';
+import { useAuth } from '../../context/AuthContext';
 
 const DepartmentList: React.FC = () => {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Department | null>(null);
   const [form, setForm] = useState({ name: '', code: '', description: '', location: '' });
@@ -54,10 +57,12 @@ const DepartmentList: React.FC = () => {
           <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100">Departments</h1>
           <p className="text-slate-500 text-sm">{departments.length} departments</p>
         </div>
-        <button onClick={() => { setEditing(null); setForm({ name: '', code: '', description: '', location: '' }); setShowForm(true); }}
-          className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-500 to-secondary-500 text-white text-sm font-semibold rounded-lg hover:from-primary-600 hover:to-secondary-600">
-          <Plus size={16} /> Add Department
-        </button>
+        {isAdmin && (
+          <button onClick={() => { setEditing(null); setForm({ name: '', code: '', description: '', location: '' }); setShowForm(true); }}
+            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-500 to-secondary-500 text-white text-sm font-semibold rounded-lg hover:from-primary-600 hover:to-secondary-600">
+            <Plus size={16} /> Add Department
+          </button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -80,10 +85,12 @@ const DepartmentList: React.FC = () => {
                   <span className="text-xs text-slate-400 font-mono">{dept.code}</span>
                 </div>
               </div>
-              <div className="flex gap-1">
-                <button onClick={() => openEdit(dept)} className="p-1.5 rounded-md hover:bg-amber-50 dark:hover:bg-amber-900/20 text-slate-400 hover:text-amber-600"><Edit size={14} /></button>
-                <button onClick={() => deleteMutation.mutate(dept._id)} className="p-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-400 hover:text-red-600"><Trash2 size={14} /></button>
-              </div>
+              {isAdmin && (
+                <div className="flex gap-1">
+                  <button onClick={() => openEdit(dept)} className="p-1.5 rounded-md hover:bg-amber-50 dark:hover:bg-amber-900/20 text-slate-400 hover:text-amber-600"><Edit size={14} /></button>
+                  <button onClick={() => deleteMutation.mutate(dept._id)} className="p-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-400 hover:text-red-600"><Trash2 size={14} /></button>
+                </div>
+              )}
             </div>
             {dept.description && <p className="text-xs text-slate-500 mb-3">{dept.description}</p>}
             <div className="flex items-center gap-2 text-xs text-slate-500">
