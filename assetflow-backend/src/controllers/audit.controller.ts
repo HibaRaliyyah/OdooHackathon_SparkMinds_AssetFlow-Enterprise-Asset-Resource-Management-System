@@ -1,4 +1,5 @@
 import { Response } from 'express';
+import mongoose from 'mongoose';
 import Audit from '../models/Audit';
 import Asset from '../models/Asset';
 import { sendSuccess, sendError, getPaginationParams } from '../utils/response.util';
@@ -19,7 +20,10 @@ export const startAudit = async (req: AuthRequest, res: Response): Promise<void>
       totalAssets,
     });
     sendSuccess(res, audit, 'Audit started', 201);
-  } catch (err: unknown) { sendError(res, (err as Error).message, 500); }
+  } catch (err: unknown) {
+    require('fs').appendFileSync('audit-error.log', (err as Error).stack + '\\n');
+    sendError(res, (err as Error).message, 500); 
+  }
 };
 
 export const getAudits = async (req: AuthRequest, res: Response): Promise<void> => {
@@ -45,9 +49,11 @@ export const scanAsset = async (req: AuthRequest, res: Response): Promise<void> 
     const audit = await Audit.findById(req.params.id);
     if (!audit) { sendError(res, 'Audit not found', 404); return; }
 
-    const asset = await Asset.findOne({ $or: [{ assetId }, { _id: assetId }] });
+    const isValidObjectId = mongoose.Types.ObjectId.isValid(assetId);
+    const query = isValidObjectId ? { $or: [{ assetId }, { _id: assetId }] } : { assetId };
+    const asset = await Asset.findOne(query);
     if (!asset) {
-      audit.discrepancies.push({ asset: assetId as unknown as import('mongoose').Types.ObjectId, issue: 'Asset not found in system', });
+      audit.discrepancies.push({ issue: `Asset not found in system: ${assetId}` });
       await audit.save();
       sendError(res, 'Asset not found', 404);
       return;

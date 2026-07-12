@@ -68,7 +68,7 @@ UserSchema.virtual('fullName').get(function () {
 
 UserSchema.set('toJSON', {
   virtuals: true,
-  transform: (_doc, ret: Record<string, unknown>) => {
+  transform: (_doc, ret: any) => {
     delete ret['password'];
     delete ret['emailVerificationToken'];
     delete ret['passwordResetToken'];

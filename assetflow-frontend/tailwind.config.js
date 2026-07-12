@@ -27,6 +27,7 @@ export default {
         secondary: {
           DEFAULT: '#7C3AED',
           500: '#7C3AED',
+          600: '#6D28D9',
         },
         success: '#10B981',
         warning: '#F59E0B',

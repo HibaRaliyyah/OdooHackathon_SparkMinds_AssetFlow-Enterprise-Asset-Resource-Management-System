@@ -191,7 +191,7 @@ export const getDashboardStats = async (req: AuthRequest, res: Response): Promis
 
     // Department usage
     const deptUsage = await Asset.aggregate([
-      { $match: { status: 'allocated' } },
+      { $match: filter },
       { $group: { _id: '$department', count: { $sum: 1 } } },
       { $lookup: { from: 'departments', localField: '_id', foreignField: '_id', as: 'dept' } },
       { $unwind: { path: '$dept', preserveNullAndEmptyArrays: true } },
@@ -206,10 +206,49 @@ export const getDashboardStats = async (req: AuthRequest, res: Response): Promis
       .sort({ createdAt: -1 })
       .limit(10);
 
+    // Monthly Growth (last 6 months)
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
+    sixMonthsAgo.setDate(1);
+    sixMonthsAgo.setHours(0, 0, 0, 0);
+
+    const prevAssetsCount = await Asset.countDocuments({ ...filter, createdAt: { $lt: sixMonthsAgo } });
+
+    const monthlyData = await Asset.aggregate([
+      { $match: { ...filter, createdAt: { $gte: sixMonthsAgo } } },
+      { 
+        $group: {
+          _id: { month: { $month: '$createdAt' }, year: { $year: '$createdAt' } },
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { '_id.year': 1, '_id.month': 1 } }
+    ]);
+
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const assetGrowth = [];
+    
+    let cumulative = prevAssetsCount;
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date();
+      d.setMonth(d.getMonth() - i);
+      const m = d.getMonth() + 1; // 1-12
+      const y = d.getFullYear();
+      
+      const found = monthlyData.find(x => x._id.month === m && x._id.year === y);
+      cumulative += (found ? found.count : 0);
+      
+      assetGrowth.push({
+        month: monthNames[m - 1],
+        assets: cumulative
+      });
+    }
+
     sendSuccess(res, {
       stats: { total, available, allocated, underMaintenance, disposed, pendingRequests: pending },
       categoryDistribution: categoryDist,
       departmentUsage: deptUsage,
+      assetGrowth,
       recentActivity,
     });
   } catch (err: unknown) {

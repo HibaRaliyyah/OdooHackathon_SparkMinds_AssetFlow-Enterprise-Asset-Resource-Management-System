@@ -1,10 +1,13 @@
-import React from 'react';
-import { useQuery } from '@tanstack/react-query';
+import React, { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Search, FileText } from 'lucide-react';
 import { CardSkeleton } from '../../components/common/Skeleton';
-// We'd add auditService in services/index.ts. For now mocking it.
 import api from '../../lib/api';
 import { formatDate } from '../../lib/utils';
+import { departmentService, auditService } from '../../services';
+import toast from 'react-hot-toast';
+import { motion } from 'framer-motion';
+import AuditDetailsModal from './AuditDetailsModal';
 
 interface Audit {
   _id: string;
@@ -18,12 +21,37 @@ interface Audit {
 }
 
 const Audits: React.FC = () => {
+  const queryClient = useQueryClient();
+  const [showForm, setShowForm] = useState(false);
+  const [selectedAudit, setSelectedAudit] = useState<Audit | null>(null);
+  const [form, setForm] = useState({ title: '', department: '', scheduledDate: '' });
+
   const { data: res, isLoading } = useQuery({
     queryKey: ['audits'],
-    queryFn: () => api.get('/audits'),
+    queryFn: () => auditService.getAll(),
+  });
+
+  const { data: deptRes } = useQuery({
+    queryKey: ['departments'],
+    queryFn: departmentService.getAll,
   });
 
   const audits = (res?.data?.data as Audit[]) || [];
+  const departments = (deptRes?.data?.data as { _id: string; name: string }[]) || [];
+
+  const startMutation = useMutation({
+    mutationFn: auditService.start,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['audits'] });
+      toast.success('Audit scheduled successfully');
+      setShowForm(false);
+      setForm({ title: '', department: '', scheduledDate: '' });
+    },
+    onError: (err: any) => {
+      console.error('Audit schedule error:', err);
+      toast.error(err.response?.data?.message || err.message || 'Failed to schedule audit');
+    },
+  });
 
   return (
     <div className="space-y-6">
@@ -32,7 +60,7 @@ const Audits: React.FC = () => {
           <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Audits</h1>
           <p className="text-slate-500 text-sm mt-1">Manage system-wide asset audits and inspections.</p>
         </div>
-        <button className="btn-primary w-full sm:w-auto">
+        <button onClick={() => setShowForm(true)} className="btn-primary w-full sm:w-auto">
           <Plus size={16} /> Schedule Audit
         </button>
       </div>
@@ -60,7 +88,7 @@ const Audits: React.FC = () => {
             </div>
             <h3 className="text-lg font-medium text-slate-800 dark:text-slate-200 mb-1">No audits scheduled</h3>
             <p className="text-sm text-slate-500 mb-4">Start by scheduling your first asset audit.</p>
-            <button className="btn-primary mx-auto">
+            <button onClick={() => setShowForm(true)} className="btn-primary mx-auto">
               <Plus size={16} /> Schedule Audit
             </button>
           </div>
@@ -94,7 +122,7 @@ const Audits: React.FC = () => {
                     <td className="py-4 text-sm text-slate-600 dark:text-slate-400">{formatDate(audit.scheduledDate)}</td>
                     <td className="py-4 text-sm text-slate-600 dark:text-slate-400">{audit.auditor?.firstName} {audit.auditor?.lastName}</td>
                     <td className="py-4 text-right">
-                      <button className="text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors">
+                      <button onClick={() => setSelectedAudit(audit)} className="text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors">
                         View Details
                       </button>
                     </td>
@@ -105,6 +133,47 @@ const Audits: React.FC = () => {
           </div>
         )}
       </div>
+
+      {showForm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+            className="glass-card p-6 w-full max-w-md">
+            <h3 className="font-semibold text-slate-800 dark:text-slate-100 mb-4">Schedule Audit</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1 block">Audit Title *</label>
+                <input value={form.title} onChange={e => setForm({ ...form, title: e.target.value })}
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:border-primary-400 text-slate-800 dark:text-slate-200"
+                  placeholder="e.g., Annual IT Equipment Audit" />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1 block">Department (Optional)</label>
+                <select value={form.department} onChange={e => setForm({ ...form, department: e.target.value })}
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:border-primary-400 text-slate-800 dark:text-slate-200">
+                  <option value="">All Departments</option>
+                  {departments.map(d => <option key={d._id} value={d._id}>{d.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-1 block">Scheduled Date</label>
+                <input type="date" value={form.scheduledDate} onChange={e => setForm({ ...form, scheduledDate: e.target.value })}
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 focus:outline-none focus:border-primary-400 text-slate-800 dark:text-slate-200" />
+              </div>
+            </div>
+            <div className="flex gap-3 mt-6">
+              <button onClick={() => setShowForm(false)} className="flex-1 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300">Cancel</button>
+              <button onClick={() => startMutation.mutate({ ...form, department: form.department || undefined })} disabled={startMutation.isPending || !form.title}
+                className="flex-1 py-2 text-sm rounded-lg bg-gradient-to-r from-primary-500 to-secondary-500 text-white font-semibold disabled:opacity-70">
+                {startMutation.isPending ? 'Scheduling...' : 'Schedule Audit'}
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {selectedAudit && (
+        <AuditDetailsModal audit={selectedAudit as any} onClose={() => setSelectedAudit(null)} />
+      )}
     </div>
   );
 };

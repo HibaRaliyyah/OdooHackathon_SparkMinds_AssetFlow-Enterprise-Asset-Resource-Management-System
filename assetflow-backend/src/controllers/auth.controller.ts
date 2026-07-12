@@ -31,7 +31,8 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     await sendEmail(email, 'Verify Your Email — AssetFlow',
       emailTemplates.verification(firstName, verificationToken));
 
-    const token = generateToken(user.id, user.role, user.department?.toString());
+    const deptId = user.department ? ((user.department as any)._id || user.department).toString() : undefined;
+    const token = generateToken(user.id, user.role, deptId);
     sendSuccess(res, { token, user }, 'Registration successful. Check email for verification.', 201);
   } catch (err: unknown) {
     sendError(res, (err as Error).message, 500);
@@ -66,7 +67,8 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       description: `${user.fullName} logged in`,
     });
 
-    const token = generateToken(user.id, user.role, user.department?.toString());
+    const deptId = user.department ? ((user.department as any)._id || user.department).toString() : undefined;
+    const token = generateToken(user.id, user.role, deptId);
     sendSuccess(res, { token, user }, 'Login successful');
   } catch (err: unknown) {
     sendError(res, (err as Error).message, 500);

@@ -60,6 +60,17 @@
   .badge-approved { @apply bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400; }
   .badge-rejected { @apply bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400; }
 
+  /* Buttons */
+  .btn-primary {
+    @apply flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-500 to-secondary-500 hover:from-primary-600 hover:to-secondary-600 text-white rounded-lg font-medium transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-70 disabled:cursor-not-allowed;
+  }
+  .btn-secondary {
+    @apply flex items-center justify-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-lg font-medium transition-all duration-200 shadow-sm disabled:opacity-70 disabled:cursor-not-allowed;
+  }
+  .btn-danger {
+    @apply flex items-center justify-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-70 disabled:cursor-not-allowed;
+  }
+
   /* Skeleton shimmer */
   .skeleton {
     @apply bg-gradient-to-r from-slate-200 via-slate-100 to-slate-200 dark:from-slate-700 dark:via-slate-600 dark:to-slate-700 animate-shimmer;

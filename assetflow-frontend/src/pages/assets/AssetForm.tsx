@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Upload, X } from 'lucide-react';
@@ -30,6 +30,8 @@ const schema = z.object({
 type AssetFormData = z.infer<typeof schema>;
 
 const AssetForm: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
+  const isEditMode = !!id;
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [images, setImages] = useState<File[]>([]);
@@ -38,16 +40,50 @@ const AssetForm: React.FC = () => {
   const { data: cats } = useQuery({ queryKey: ['categories'], queryFn: categoryService.getAll });
   const { data: depts } = useQuery({ queryKey: ['departments'], queryFn: departmentService.getAll });
 
-  const { register, handleSubmit, formState: { errors } } = useForm<AssetFormData>({ resolver: zodResolver(schema) });
+  const { data: assetResponse } = useQuery({
+    queryKey: ['asset', id],
+    queryFn: () => assetService.getById(id!),
+    enabled: isEditMode,
+  });
+
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<AssetFormData>({ resolver: zodResolver(schema) });
+
+  useEffect(() => {
+    if (isEditMode && assetResponse?.data?.data) {
+      const asset = assetResponse.data.data as any;
+      reset({
+        name: asset.name,
+        description: asset.description || '',
+        category: asset.category?._id || asset.category || '',
+        department: asset.department?._id || asset.department || '',
+        status: asset.status,
+        condition: asset.condition,
+        location: asset.location || '',
+        serialNumber: asset.serialNumber || '',
+        brand: asset.brand || '',
+        model: asset.model || '',
+        purchaseDate: asset.purchaseDate ? new Date(asset.purchaseDate).toISOString().split('T')[0] : '',
+        purchasePrice: asset.purchasePrice?.toString() || '',
+        vendor: asset.vendor || '',
+        warrantyExpiry: asset.warrantyExpiry ? new Date(asset.warrantyExpiry).toISOString().split('T')[0] : '',
+        tags: Array.isArray(asset.tags) ? asset.tags.join(', ') : (asset.tags || ''),
+      });
+      if (asset.images) {
+        // Preload images if needed, or simply leave previews empty for new uploads
+        setPreviews(asset.images);
+      }
+    }
+  }, [isEditMode, assetResponse, reset]);
 
   const mutation = useMutation({
-    mutationFn: (fd: FormData) => assetService.create(fd),
+    mutationFn: (fd: FormData) => isEditMode ? assetService.update(id!, fd) : assetService.create(fd),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['assets'] });
-      toast.success('Asset registered successfully!');
+      queryClient.invalidateQueries({ queryKey: ['asset', id] });
+      toast.success(isEditMode ? 'Asset updated successfully!' : 'Asset registered successfully!');
       navigate('/assets');
     },
-    onError: (err: unknown) => toast.error((err as { response?: { data?: { message?: string } } }).response?.data?.message || 'Failed to create asset'),
+    onError: (err: unknown) => toast.error((err as { response?: { data?: { message?: string } } }).response?.data?.message || (isEditMode ? 'Failed to update asset' : 'Failed to create asset')),
   });
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -83,8 +119,8 @@ const AssetForm: React.FC = () => {
           <ArrowLeft size={18} />
         </button>
         <div>
-          <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100">Register New Asset</h1>
-          <p className="text-slate-500 text-sm">Fill in asset details below</p>
+          <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100">{isEditMode ? 'Edit Asset' : 'Register New Asset'}</h1>
+          <p className="text-slate-500 text-sm">{isEditMode ? 'Update asset details below' : 'Fill in asset details below'}</p>
         </div>
       </div>
 
@@ -128,6 +164,15 @@ const AssetForm: React.FC = () => {
         <div className="glass-card p-5">
           <h3 className="font-semibold text-slate-700 dark:text-slate-200 mb-4 text-sm">Asset Details</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className={labelCls}>Status</label>
+              <select {...register('status')} className={inputCls}>
+                <option value="available">Available</option>
+                <option value="allocated">Allocated</option>
+                <option value="under_maintenance">Maintenance</option>
+                <option value="disposed">Disposed</option>
+              </select>
+            </div>
             <div>
               <label className={labelCls}>Brand</label>
               <input {...register('brand')} placeholder="Apple, Dell, HP..." className={inputCls} />
@@ -212,7 +257,7 @@ const AssetForm: React.FC = () => {
           </button>
           <button type="submit" disabled={mutation.isPending}
             className="px-6 py-2.5 text-sm rounded-lg bg-gradient-to-r from-primary-500 to-secondary-500 text-white font-semibold hover:from-primary-600 hover:to-secondary-600 disabled:opacity-70">
-            {mutation.isPending ? 'Registering...' : 'Register Asset'}
+            {mutation.isPending ? (isEditMode ? 'Updating...' : 'Registering...') : (isEditMode ? 'Update Asset' : 'Register Asset')}
           </button>
         </div>
       </form>

@@ -34,7 +34,15 @@ export const authenticate = async (
       return;
     }
 
-    req.user = { id: decoded.id, role: decoded.role, department: decoded.department };
+    let deptId = decoded.department;
+    if (deptId && deptId.includes('ObjectId(')) {
+      const match = deptId.match(/ObjectId\('([^']+)'\)/);
+      deptId = match ? match[1] : undefined;
+    } else if (deptId && deptId.startsWith('{')) {
+      deptId = undefined; // Fallback if it's some other object representation
+    }
+
+    req.user = { id: decoded.id, role: decoded.role, department: deptId };
     next();
   } catch (error) {
     res.status(401).json({ success: false, message: 'Invalid or expired token' });

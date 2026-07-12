@@ -3,6 +3,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { BarChart3, Download, TrendingUp, Package, Wrench, Calendar } from 'lucide-react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, PieChart, Pie, Cell, LineChart, Line, Legend } from 'recharts';
+import html2canvas from 'html2canvas';
+import jsPDF from 'jspdf';
+import toast from 'react-hot-toast';
 import { assetService } from '../../services';
 
 const COLORS = ['#4F46E5', '#7C3AED', '#10B981', '#F59E0B', '#EF4444', '#06B6D4'];
@@ -13,6 +16,7 @@ const Reports: React.FC = () => {
   const stats = (dashData as { data: { data: { stats: { total: number; available: number; allocated: number; underMaintenance: number; disposed: number } } } })?.data?.data?.stats;
   const categoryDist = (dashData as { data: { data: { categoryDistribution: { name: string; count: number }[] } } })?.data?.data?.categoryDistribution || [];
   const deptUsage = (dashData as { data: { data: { departmentUsage: { name: string; count: number }[] } } })?.data?.data?.departmentUsage || [];
+  const assetGrowth = (dashData as { data: { data: { assetGrowth: { month: string; assets: number }[] } } })?.data?.data?.assetGrowth || [];
 
   const statusData = stats ? [
     { name: 'Available', value: stats.available, color: '#10B981' },
@@ -21,8 +25,36 @@ const Reports: React.FC = () => {
     { name: 'Disposed', value: stats.disposed, color: '#EF4444' },
   ] : [];
 
+  const handleExportPDF = async () => {
+    const element = document.getElementById('report-content');
+    if (!element) return;
+    
+    const toastId = toast.loading('Generating PDF...');
+    
+    try {
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: document.documentElement.classList.contains('dark') ? '#0f172a' : '#f8fafc',
+      });
+      
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`AssetFlow_Report_${new Date().toISOString().split('T')[0]}.pdf`);
+      toast.success('PDF Exported Successfully!', { id: toastId });
+    } catch (error) {
+      console.error('Failed to generate PDF', error);
+      toast.error('Failed to generate PDF', { id: toastId });
+    }
+  };
+
   return (
-    <div className="space-y-6">
+    <div id="report-content" className="space-y-6 p-4 -m-4 bg-transparent rounded-xl">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
@@ -30,7 +62,11 @@ const Reports: React.FC = () => {
           </h1>
           <p className="text-slate-500 text-sm">Asset overview and utilization metrics</p>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-sm font-medium rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700">
+        <button 
+          onClick={handleExportPDF}
+          className="flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-sm font-medium rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+          data-html2canvas-ignore="true"
+        >
           <Download size={16} /> Export PDF
         </button>
       </div>
@@ -95,10 +131,7 @@ const Reports: React.FC = () => {
         <div className="glass-card p-5">
           <h3 className="font-semibold text-slate-700 dark:text-slate-200 mb-4 text-sm">Asset Growth (Monthly)</h3>
           <ResponsiveContainer width="100%" height={250}>
-            <LineChart data={[
-              { month: 'Jan', assets: 45 }, { month: 'Feb', assets: 52 }, { month: 'Mar', assets: 61 },
-              { month: 'Apr', assets: 70 }, { month: 'May', assets: 78 }, { month: 'Jun', assets: 85 },
-            ]}>
+            <LineChart data={assetGrowth}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
               <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#94a3b8' }} />
               <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} />

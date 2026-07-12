@@ -129,7 +129,15 @@ export const naturalLanguageSearch = async (req: AuthRequest, res: Response): Pr
       .populate('assignedTo', 'firstName lastName')
       .limit(20);
 
-    sendSuccess(res, { assets, query, parsedFilter: filter });
+    let summary = '';
+    if (assets.length === 0) {
+      summary = 'I could not find any assets matching your query.';
+    } else {
+      summary = `I found ${assets.length} asset(s) matching your query:\n\n` + 
+        assets.map(a => `- ${a.name} (${a.assetId}): Status is ${a.status}, Condition is ${a.condition}`).join('\n');
+    }
+
+    sendSuccess(res, { assets, query, parsedFilter: filter, summary });
   } catch (err: unknown) { sendError(res, (err as Error).message, 500); }
 };
 

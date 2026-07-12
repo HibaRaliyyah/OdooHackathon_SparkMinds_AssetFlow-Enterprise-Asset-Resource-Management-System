@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
-export interface IAsset extends Document {
+export interface IAsset extends Omit<Document, 'model'> {
   assetId: string;
   qrCode?: string;
   name: string;

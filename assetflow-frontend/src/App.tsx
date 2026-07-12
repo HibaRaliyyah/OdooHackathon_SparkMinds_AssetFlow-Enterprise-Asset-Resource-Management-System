@@ -8,6 +8,7 @@ import Dashboard from './pages/dashboard/Dashboard';
 import AssetList from './pages/assets/AssetList';
 import AssetForm from './pages/assets/AssetForm';
 import DepartmentList from './pages/departments/DepartmentList';
+import CategoryList from './pages/categories/CategoryList';
 import EmployeeList from './pages/employees/EmployeeList';
 import BookingList from './pages/bookings/BookingList';
 import MaintenanceList from './pages/maintenance/MaintenanceList';
@@ -44,12 +45,12 @@ function App() {
               <Route path="assets" element={<AssetList />} />
               <Route path="assets/new" element={<AssetForm />} />
               <Route path="assets/:id" element={<AssetDetails />} />
-              <Route path="assets/:id/edit" element={<Placeholder title="Edit Asset" />} />
+              <Route path="assets/:id/edit" element={<AssetForm />} />
               <Route path="assets/:id/qr" element={<AssetDetails />} />
               <Route path="departments" element={<DepartmentList />} />
               <Route path="employees" element={<EmployeeList />} />
               <Route path="employees/:id" element={<EmployeeDetails />} />
-              <Route path="categories" element={<Placeholder title="Categories" />} />
+              <Route path="categories" element={<CategoryList />} />
               <Route path="bookings" element={<BookingList />} />
               <Route path="maintenance" element={<MaintenanceList />} />
               <Route path="transfers" element={<TransferList />} />

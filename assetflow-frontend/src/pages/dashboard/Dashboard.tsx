@@ -24,10 +24,11 @@ const Dashboard: React.FC = () => {
     queryFn: () => aiService.getInsights() as unknown as { data: { data: AIInsight[] } },
   });
 
-  const stats = dashData?.data?.stats;
-  const categoryDist = dashData?.data?.categoryDistribution || [];
-  const deptUsage = dashData?.data?.departmentUsage || [];
-  const recentActivity = dashData?.data?.recentActivity || [];
+  const dashboardPayload = (dashData as any)?.data?.data;
+  const stats = dashboardPayload?.stats;
+  const categoryDist = dashboardPayload?.categoryDistribution || [];
+  const deptUsage = dashboardPayload?.departmentUsage || [];
+  const recentActivity = dashboardPayload?.recentActivity || [];
   const insights: AIInsight[] = (insightsData as unknown as { data: { data: AIInsight[] } })?.data?.data || [];
 
   const CHART_COLORS = ['#4F46E5', '#7C3AED', '#10B981', '#F59E0B', '#EF4444', '#06B6D4'];
